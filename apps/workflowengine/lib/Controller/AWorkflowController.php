@@ -34,20 +34,26 @@ use OCP\AppFramework\OCS\OCSException;
 use OCP\AppFramework\OCS\OCSForbiddenException;
 use OCP\AppFramework\OCSController;
 use OCP\IRequest;
+use Psr\Log\LoggerInterface;
 
 abstract class AWorkflowController extends OCSController {
 
 	/** @var Manager */
 	protected $manager;
 
+	/** @var LoggerInterface */
+	private $logger;
+
 	public function __construct(
 		$appName,
 		IRequest $request,
-		Manager $manager
+		Manager $manager,
+		LoggerInterface $logger
 	) {
 		parent::__construct($appName, $request);
 
 		$this->manager = $manager;
+		$this->logger = $logger;
 	}
 
 	/**
