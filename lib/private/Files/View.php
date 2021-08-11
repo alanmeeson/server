@@ -50,6 +50,7 @@ use Icewind\Streams\CallbackWrapper;
 use OC\Files\Mount\MoveableMount;
 use OC\Files\Storage\Storage;
 use OC\User\User;
+use OCA\Files_External\Config\ExternalMountPoint;
 use OCA\Files_Sharing\SharedMount;
 use OCP\Constants;
 use OCP\Files\Cache\ICacheEntry;
@@ -1389,6 +1390,24 @@ class View {
 		}
 		$storage = $mount->getStorage();
 		$internalPath = $mount->getInternalPath($path);
+
+		// This mount is a share, checking if it
+		// originates from an external storage
+		if ($mount instanceof SharedMount) {
+			try {
+				$node = $mount->getShare()->getNode();
+				$extStorage = $node->getStorage();
+				$extMountPoint = $node->getMountPoint();
+				// This is an external storage, checking for updates
+				if ($extMountPoint instanceof ExternalMountPoint) {
+					$extRelativePath = $node->getpath();
+					$extInternalPath = $extMountPoint->getInternalPath($extRelativePath);
+					$scanner = $extStorage->getScanner($extInternalPath);
+					$scanner->scan($extInternalPath, Cache\Scanner::SCAN_SHALLOW);
+				}
+			} catch (\Exception $e) {}
+		}
+
 		if ($storage) {
 			$data = $this->getCacheEntry($storage, $internalPath, $relativePath);
 
