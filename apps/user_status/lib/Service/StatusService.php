@@ -314,11 +314,11 @@ class StatusService {
 
 	/**
 	 * @param string $userId
-	 * @return bool
+	 * @return bool/
 	 */
-	public function removeUserStatus(string $userId): bool {
+	public function removeUserStatus(string $userId, bool $isBackup = false): bool {
 		try {
-			$userStatus = $this->mapper->findByUserId($userId);
+			$userStatus = $this->mapper->findByUserId($userId, $isBackup);
 		} catch (DoesNotExistException $ex) {
 			// if there is no status to remove, just return
 			return false;
@@ -389,5 +389,52 @@ class StatusService {
 			$status->setCustomMessage($predefinedMessage['message']);
 			$status->setCustomIcon($predefinedMessage['icon']);
 		}
+	}
+
+	public function backupCurrentStatus(string $userId): void {
+		try {
+			$userStatus = $this->mapper->findByUserId($userId);
+		} catch (DoesNotExistException $ex) {
+			// if there is no status to backup, just return
+			return;
+		}
+		$userStatus->setIsBackup(true);
+		// Prefix user account with an underscore because user_id is marked as unique
+		// in the table. Starting an username with an underscore is not allowed so this
+		// shouldn't create any trouble.
+		$userStatus->setUserId('_' . $userStatus->getUserId());
+		$this->mapper->update($userStatus);
+	}
+
+	public function revertUserStatus(string $userId, string $messageId, string $status): void {
+		try {
+			/** @var UserStatus $userStatus */
+			$backupUserStatus = $this->mapper->findByUserId($userId, true);
+		} catch (DoesNotExistException $ex) {
+			// No backup, just move back to available
+			try {
+				$userStatus = $this->mapper->findByUserId($userId);
+			} catch (DoesNotExistException $ex) {
+				// No backup nor current status => ignore
+				return;
+			}
+			$this->cleanStatus($userStatus);
+			$this->cleanStatusMessage($userStatus);
+			return;
+		}
+		try {
+			$userStatus = $this->mapper->findByUserId($userId);
+			if ($userStatus->getMessageId() === $messageId && $userStatus->getStatus() === $status) {
+				$this->removeUserStatus($userId);
+			} else {
+				// delete obsolete backup
+				$this->removeUserStatus($userId, true);
+			}
+		} catch (DoesNotExistException $ex) {
+			// No current status => nothing to delete
+		}
+		$backupUserStatus->setIsBackup(false);
+		$backupUserStatus->setUserId(substr($backupUserStatus->getUserId(), 1));
+		$this->mapper->delete($backupUserStatus);
 	}
 }

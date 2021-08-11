@@ -27,6 +27,7 @@ namespace OCA\UserStatus\Connector;
 
 use OCA\UserStatus\Service\StatusService;
 use OCP\UserStatus\IProvider;
+use OCP\UserStatus\IUserStatus;
 
 class UserStatusProvider implements IProvider {
 
@@ -54,5 +55,17 @@ class UserStatusProvider implements IProvider {
 		}
 
 		return $userStatuses;
+	}
+
+	public function setUserStatus(string $userId, string $messageId, string $status, bool $isUserDefined = false): void {
+		if (!$isUserDefined) {
+			$this->service->backupCurrentStatus($userId);
+		}
+		$this->service->setPredefinedMessage($userId, $messageId, null);
+		$this->service->setStatus($userId, $status, null, $isUserDefined);
+	}
+
+	public function revertUserStatus(string $userId, string $messageId, string $status): void {
+		$this->service->revertUserStatus($userId, $messageId, $status);
 	}
 }

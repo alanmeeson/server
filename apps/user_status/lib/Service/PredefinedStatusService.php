@@ -41,6 +41,7 @@ class PredefinedStatusService {
 	private const SICK_LEAVE = 'sick-leave';
 	private const VACATIONING = 'vacationing';
 	private const REMOTE_WORK = 'remote-work';
+	public const CALL = 'call';
 
 	/** @var IL10N */
 	private $l10n;
@@ -101,6 +102,13 @@ class PredefinedStatusService {
 				'message' => $this->getTranslatedStatusForId(self::VACATIONING),
 				'clearAt' => null,
 			],
+			[
+				'id' => self::CALL,
+				'icon' => '💬',
+				'message' => $this->getTranslatedStatusForId(self::CALL),
+				'clearAt' => null,
+				'visible' => false,
+			],
 		];
 	}
 
@@ -139,6 +147,9 @@ class PredefinedStatusService {
 			case self::REMOTE_WORK:
 				return '🏡';
 
+			case self::CALL:
+				return '💬';
+
 			default:
 				return null;
 		}
@@ -165,6 +176,9 @@ class PredefinedStatusService {
 
 			case self::REMOTE_WORK:
 				return $this->l10n->t('Working remotely');
+
+			case self::CALL:
+				return $this->l10n->t('In a call');
 
 			default:
 				return null;
